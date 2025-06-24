@@ -15,13 +15,13 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
         file_size_mb = round(file_size / (1024 * 1024), 2)
         ext = os.path.splitext(output_path)[1]
 
-        # Ambil metadata jika tersedia
+        # Coba ambil metadata, jika tidak ada, lanjutkan dengan nilai default
         info = get_video_info(output_path)
         width = info.get("width")
         height = info.get("height")
-        video_duration = info.get("duration", duration)
+        video_duration = info.get("duration") or duration
 
-        # Siapkan status message awal
+        # Kirim pesan status awal
         status_msg = await message.reply_text("📤 Menyiapkan unggahan...")
 
         # Inisialisasi progress bar
@@ -63,12 +63,12 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
             progress.n = current
             progress.refresh()
 
-        # Kirim file
+        # Kirim file video
         await client.send_video(
             chat_id=message.chat.id,
             video=output_path,
-            duration=video_duration or None,
-            thumb=thumb or None,
+            duration=video_duration,
+            thumb=thumb,
             caption=f"✅ Selesai!\n<code>{filename}</code>",
             parse_mode=ParseMode.HTML,
             progress=progress_callback
@@ -76,6 +76,7 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
 
         progress.close()
 
+        # Hapus thumbnail jika ada
         if thumb and os.path.exists(thumb):
             os.remove(thumb)
 
