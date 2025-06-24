@@ -27,7 +27,12 @@ async def handle_m3u8(client, message: Message):
         # Callback untuk memperbarui progress di Telegram
         async def progress_callback(size_mb):
             try:
-                await status_msg.edit_text(f"📥 Sedang mengunduh...\n📦 Terunduh: {size_mb:.2f} MB")
+                await status_msg.edit_text(
+                    f"📥 Sedang mengunduh...\n"
+                    f"📝 Nama file: `{filename}`\n"
+                    f"📦 Terunduh: {size_mb:.2f} MB",
+                    parse_mode="Markdown"
+                )
             except Exception:
                 pass  # Jika edit gagal (pesan dihapus/user block), lanjut saja
 
