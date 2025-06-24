@@ -14,7 +14,6 @@ async def handle_m3u8(client, message: Message):
     url = message.text.strip()
     print("[BOT] 🔗 Link M3U8 diterima:", url)
 
-    # 🔒 Batasi hanya 1 unduhan dalam satu waktu
     if global_download_lock.locked():
         await message.reply_text("⏳ Maaf, sedang ada unduhan aktif. Mohon tunggu hingga selesai.")
         return
@@ -28,15 +27,12 @@ async def handle_m3u8(client, message: Message):
 
         info_cache = {}
 
+        # Callback progres unduhan (diperbarui tiap 10 detik)
         async def progress_callback(size_mb):
             elapsed = time.time() - start_time
             speed = size_mb / elapsed if elapsed > 0 else 0
             time_now = datetime.now().strftime("%d %b %Y %H:%M:%S")
             ext = os.path.splitext(output_path)[1]
-
-            # Ambil info video (sekali)
-            if not info_cache:
-                info_cache.update(get_video_info(output_path))
 
             width = info_cache.get("width", "-")
             height = info_cache.get("height", "-")
@@ -53,16 +49,20 @@ async def handle_m3u8(client, message: Message):
                 f"⬇️ <b>Terunduh:</b> <code>{size_mb:.2f} MB</code>\n"
                 f"⏱️ <b>Durasi:</b> <code>{elapsed:.1f} detik</code>\n"
                 f"⚡ <b>Kecepatan:</b> <code>{speed:.2f} MB/s</code>\n"
-                f"🕓 <b>Waktu:</b> <code>{time_now}</code>\n\n"
+                f"🕓 <b>Waktu:</b> <code>{time_now}</code>\n"
                 "━━━━━━━━━━━━━━━━━━━━━━━"
             )
             try:
                 await status_msg.edit_text(text, parse_mode="html")
             except:
-                pass
+                pass  # Biarkan jika gagal edit (misal rate limit)
 
         try:
             await download_m3u8(url, output_path, progress_callback)
+
+            # Ambil metadata setelah video selesai diunduh
+            info_cache.update(get_video_info(output_path))
+
             print("[BOT] ✅ Unduhan selesai:", output_path)
             await status_msg.edit_text("✅ Unduhan selesai.")
         except Exception as e:
@@ -78,11 +78,10 @@ async def handle_m3u8(client, message: Message):
 
         await upload_video(client, message, output_path, filename, duration, thumb)
 
-        # 🧹 Hapus file video
         if os.path.exists(output_path):
             os.remove(output_path)
 
 m3u8_handler = MessageHandler(
     handle_m3u8,
     filters.text & ~filters.command("start")
-                )
+)
