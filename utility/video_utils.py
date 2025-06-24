@@ -1,20 +1,11 @@
 import subprocess
 import os
 import asyncio
-from tqdm import tqdm
 
-async def download_m3u8(url: str, output_path: str):
-    """
-    Unduh video dari M3U8 menggunakan ffmpeg dan tampilkan progress bar di Colab/terminal.
-    """
-    print(f"[FFMPEG] 🚀 Memulai unduhan:\n{url}")
-    print(f"[FFMPEG] 📦 Menyimpan ke: {output_path}")
+async def download_m3u8(url, output_path):
+    print(f"[FFMPEG] 🚀 Memulai proses download dari:\n{url}")
 
     try:
-        # Estimasi durasi total (opsional, tergantung m3u8 info)
-        total_duration = 60 * 10  # Misal 10 menit (600 detik)
-        progress = tqdm(total=total_duration, desc="📥 Mengunduh", unit="detik")
-
         process = subprocess.Popen(
             [
                 "ffmpeg",
@@ -28,39 +19,33 @@ async def download_m3u8(url: str, output_path: str):
             universal_newlines=True
         )
 
+        last_reported = -1  # Untuk mencegah print berulang dengan nilai sama
+
         while True:
             line = process.stdout.readline()
             if line == '' and process.poll() is not None:
                 break
 
-            if "time=" in line:
-                try:
-                    # Ekstrak durasi saat ini dari output ffmpeg
-                    time_str = line.split("time=")[-1].split(" ")[0].strip()
-                    h, m, s = map(float, time_str.split(":"))
-                    current_sec = int(h * 3600 + m * 60 + s)
-                    progress.n = current_sec
-                    progress.refresh()
-                except Exception:
-                    pass
+            # ✅ Cek dan tampilkan progres berdasarkan ukuran file
+            if os.path.exists(output_path):
+                size_mb = os.path.getsize(output_path) / (1024 * 1024)
+                size_mb = round(size_mb, 2)
+                if size_mb != last_reported:
+                    print(f"📦 Terunduh: {size_mb} MB", end="\r")
+                    last_reported = size_mb
 
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(1)
 
         process.wait()
-        progress.close()
 
         if process.returncode != 0:
             raise Exception(f"ffmpeg gagal dengan kode keluar {process.returncode}")
 
         if not os.path.exists(output_path):
-            raise FileNotFoundError("❌ File tidak ditemukan setelah proses unduh.")
+            raise FileNotFoundError("File tidak ditemukan setelah unduhan.")
 
-        size = os.path.getsize(output_path)
-        if size < 1024:
-            raise Exception("❌ File terlalu kecil, kemungkinan gagal.")
-
-        print(f"✅ Unduhan selesai ({round(size / (1024 * 1024), 2)} MB)")
+        final_size = os.path.getsize(output_path) / (1024 * 1024)
+        print(f"\n✅ Unduhan selesai. Total: {final_size:.2f} MB")
 
     except Exception as e:
-        print(f"❌ Gagal mengunduh: {e}")
-        raise
+        raise Exception(f"Gagal mengunduh video: {e}")
