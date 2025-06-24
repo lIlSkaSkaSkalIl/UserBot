@@ -19,39 +19,54 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
 
         progress = tqdm(total=file_size, unit="B", unit_scale=True, desc="📤 Mengunggah")
 
-        last_update_time = 0  # ⏱️ Inisialisasi waktu update terakhir
+        last_update_time = 0
+        start_time = time.time()
 
         def generate_progress_bar(current, total, length=20):
             filled = int(length * current / total)
             empty = length - filled
             return f"<code>[{'█' * filled}{'░' * empty}]</code>"
 
+        def format_eta(seconds):
+            m, s = divmod(int(seconds), 60)
+            return f"{m:02}:{s:02}"
+
         async def progress_callback(current, total):
             nonlocal last_update_time
             now = time.time()
 
-            # ⏱️ Perbarui status hanya jika sudah lewat 5 detik
             if now - last_update_time < 10:
                 return
             last_update_time = now
 
+            elapsed = now - start_time
             current_mb = current / (1024 * 1024)
+            speed = current_mb / elapsed if elapsed > 0 else 0
+            eta = (file_size_mb - current_mb) / speed if speed > 0 else 0
+
             bar = generate_progress_bar(current, total)
 
             text = (
-                "<b>📤 Progres Upload</b>\n"
+                "  <b>📤 Progres Upload</b>\n"
                 "╭━━━━━━━━━━━━━━━━━━━━━╮\n"
-                f"📝 <b>Nama:</b> <code>{filename}</code>\n"
-                f"📁 <b>Ukuran:</b> <code>{file_size_mb} MB</code>\n"
-                f"📂 <b>Ekstensi:</b> <code>{ext}</code>\n"
+                f" 📝 <b>Nama:</b> <code>{filename}</code>\n"
+                f" 📁 <b>Ukuran:</b> <code>{file_size_mb} MB</code>\n"
+                f" 📂 <b>Ekstensi:</b> <code>{ext}</code>\n"
             )
 
             if video_duration:
-                text += f"⏱️ <b>Durasi:</b> <code>{video_duration} detik</code>\n"
+                text += f" ⏱️ <b>Durasi:</b> <code>{video_duration} detik</code>\n"
 
             text += (
-                f"📦 <b>{current_mb:.2f} MB / {file_size_mb} MB</b>\n"
-                f"{bar}\n"
+                f" 🚀 <b>Kecepatan:</b> <code>{speed:.2f} MB/s</code>\n"
+            )
+
+            if eta > 0:
+                text += f" ⏳ <b>ETA:</b> <code>{format_eta(eta)}</code>\n"
+
+            text += (
+                f" 📦 <b>{current_mb:.2f} MB / {file_size_mb} MB</b>\n"
+                f" {bar}\n"
                 "╰━━━━━━━━━━━━━━━━━━━━━╯"
             )
 
@@ -74,6 +89,12 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
         )
 
         progress.close()
+
+        # Hapus status progres
+        try:
+            await status_msg.delete()
+        except:
+            pass
 
         if thumb and os.path.exists(thumb):
             os.remove(thumb)
