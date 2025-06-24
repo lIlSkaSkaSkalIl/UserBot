@@ -19,29 +19,17 @@ async def handle_m3u8(client, message: Message):
         return
 
     async with global_download_lock:
-        start_time = time.time()
         status_msg = await message.reply_text("🔍 Memulai proses unduhan...")
 
-        filename = f"{int(start_time)}.mp4"
+        filename = f"{int(time.time())}.mp4"
         output_path = os.path.join("downloads", filename)
 
-        # ✅ Callback untuk progres Telegram
+        # Callback untuk memperbarui progress di Telegram
         async def progress_callback(size_mb):
-            elapsed = time.time() - start_time
-            speed = size_mb / elapsed if elapsed > 0 else 0
-
             try:
-                await status_msg.edit_text(
-                    f"📥 <b>Sedang mengunduh...</b>\n"
-                    f"📝 <b>Nama File:</b> <code>{filename}</code>\n"
-                    f"🌐 <b>URL:</b> <code>{url}</code>\n"
-                    f"⏱️ <b>Waktu:</b> <code>{elapsed:.1f} detik</code>\n"
-                    f"⚡ <b>Kecepatan:</b> <code>{speed:.2f} MB/s</code>\n"
-                    f"📦 <b>Terunduh:</b> <code>{size_mb:.2f} MB</code>",
-                    parse_mode="html"
-                )
-            except:
-                pass
+                await status_msg.edit_text(f"📥 Sedang mengunduh...\n📦 Terunduh: {size_mb:.2f} MB")
+            except Exception:
+                pass  # Jika edit gagal (pesan dihapus/user block), lanjut saja
 
         try:
             await download_m3u8(url, output_path, progress_callback)
@@ -60,6 +48,7 @@ async def handle_m3u8(client, message: Message):
 
         await upload_video(client, message, output_path, filename, duration, thumb)
 
+        # 🧹 Hapus file video
         if os.path.exists(output_path):
             os.remove(output_path)
 
