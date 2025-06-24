@@ -1,3 +1,45 @@
+import subprocess
+import os
+import json
+
+def get_video_duration(path: str) -> int:
+    """Mengambil durasi video (dalam detik) menggunakan ffprobe."""
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe", "-v", "error",
+                "-select_streams", "v:0",
+                "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                path
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        return int(float(result.stdout.strip()))
+    except Exception as e:
+        print(f"❌ Gagal mengambil durasi: {e}")
+        return 0
+
+def get_thumbnail(path: str, thumb_path: str) -> str:
+    """Menghasilkan thumbnail JPG dari detik ke-1 video."""
+    try:
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", path,
+                "-ss", "00:00:01.000", "-vframes", "1",
+                "-s", "480x270",
+                thumb_path
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        return thumb_path if os.path.exists(thumb_path) else None
+    except Exception as e:
+        print(f"❌ Gagal mengambil thumbnail: {e}")
+        return None
+
 def get_video_info(path: str) -> dict:
     """Mengambil metadata lengkap video."""
     try:
@@ -17,6 +59,11 @@ def get_video_info(path: str) -> dict:
             stderr=subprocess.PIPE,
             text=True
         )
+
+        # ✅ Cetak output mentah JSON dari ffprobe untuk debugging di Colab
+        print("\n===== [FFPROBE RAW JSON OUTPUT] =====")
+        print(result.stdout)
+        print("=====================================\n")
 
         if not result.stdout:
             raise ValueError("Output ffprobe kosong")
