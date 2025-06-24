@@ -29,7 +29,7 @@ def get_thumbnail(path: str, thumb_path: str) -> str:
             [
                 "ffmpeg", "-y", "-i", path,
                 "-ss", "00:00:01.000", "-vframes", "1",
-                "-s", "480x270",  # Resolusi 16:9, ukuran medium
+                "-s", "480x270",
                 thumb_path
             ],
             stdout=subprocess.DEVNULL,
@@ -41,13 +41,14 @@ def get_thumbnail(path: str, thumb_path: str) -> str:
         return None
 
 def get_video_info(path: str) -> dict:
-    """Mengambil metadata video seperti durasi, resolusi, dan codec."""
+    """Mengambil metadata lengkap video seperti durasi, resolusi, codec, bitrate, frame rate, dll."""
     try:
         result = subprocess.run(
             [
                 "ffprobe", "-v", "error",
-                "-select_streams", "v:0",
-                "-show_entries", "stream=width,height,duration,codec_name",
+                "-select_streams", "v:0,a:0",
+                "-show_entries",
+                "format=duration,bit_rate:stream=index,codec_type,codec_name,width,height,r_frame_rate,sample_rate",
                 "-of", "json",
                 path
             ],
@@ -56,14 +57,22 @@ def get_video_info(path: str) -> dict:
             text=True
         )
         data = json.loads(result.stdout)
-        stream = data["streams"][0] if "streams" in data and data["streams"] else {}
+
+        video_stream = next((s for s in data["streams"] if s["codec_type"] == "video"), {})
+        audio_stream = next((s for s in data["streams"] if s["codec_type"] == "audio"), {})
+        format_info = data.get("format", {})
 
         return {
-            "duration": int(float(stream.get("duration", 0))),
-            "width": stream.get("width"),
-            "height": stream.get("height"),
-            "codec": stream.get("codec_name")
+            "duration": int(float(format_info.get("duration", 0))),
+            "bitrate": int(format_info.get("bit_rate", 0)) // 1000 if format_info.get("bit_rate") else None,
+            "width": video_stream.get("width"),
+            "height": video_stream.get("height"),
+            "codec": video_stream.get("codec_name"),
+            "frame_rate": eval(video_stream.get("r_frame_rate", "0")) if "r_frame_rate" in video_stream else None,
+            "audio_codec": audio_stream.get("codec_name"),
+            "sample_rate": int(audio_stream.get("sample_rate", 0)) if "sample_rate" in audio_stream else None,
         }
+
     except Exception as e:
         print(f"❌ Gagal mengambil info video: {e}")
         return {}
