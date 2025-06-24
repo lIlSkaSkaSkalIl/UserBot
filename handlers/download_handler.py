@@ -19,22 +19,27 @@ async def handle_m3u8(client, message: Message):
         return
 
     async with global_download_lock:
+        start_time = time.time()
         status_msg = await message.reply_text("🔍 Memulai proses unduhan...")
 
-        filename = f"{int(time.time())}.mp4"
+        filename = f"{int(start_time)}.mp4"
         output_path = os.path.join("downloads", filename)
 
-        # Callback untuk memperbarui progress di Telegram
+        # Callback progres unduhan
         async def progress_callback(size_mb):
+            elapsed = time.time() - start_time
+            speed = size_mb / elapsed if elapsed > 0 else 0
+
+            text = (
+                "📥 **Sedang mengunduh...**\n"
+                f"📦 Terunduh: `{size_mb:.2f} MB`\n"
+                f"⏱️ Waktu berjalan: `{elapsed:.1f} detik`\n"
+                f"🚀 Kecepatan: `{speed:.2f} MB/s`"
+            )
             try:
-                await status_msg.edit_text(
-                    f"📥 Sedang mengunduh...\n"
-                    f"📝 Nama file: `{filename}`\n"
-                    f"📦 Terunduh: {size_mb:.2f} MB",
-                    parse_mode="Markdown"
-                )
-            except Exception:
-                pass  # Jika edit gagal (pesan dihapus/user block), lanjut saja
+                await status_msg.edit_text(text, parse_mode=None)
+            except:
+                pass  # Lewati jika pesan gagal diedit
 
         try:
             await download_m3u8(url, output_path, progress_callback)
