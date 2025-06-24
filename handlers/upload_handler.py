@@ -47,7 +47,7 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
             bar = generate_progress_bar(current, total)
 
             text = (
-                "  <b>📤 Progres Upload</b>\n"
+                "   <b>📤 Progres Upload</b>\n\n"
                 "╭━━━━━━━━━━━━━━━━━━━━━╮\n"
                 f" 📝 <b>Nama:</b> <code>{filename}</code>\n"
                 f" 📁 <b>Ukuran:</b> <code>{file_size_mb} MB</code>\n"
