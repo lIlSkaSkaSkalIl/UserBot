@@ -29,17 +29,14 @@ async def handle_m3u8(client, message: Message):
         async def progress_callback(size_mb):
             elapsed = time.time() - start_time
             speed = size_mb / elapsed if elapsed > 0 else 0
-            time_now = datetime.now().strftime("%d %b %Y %H:%M:%S")
 
             text = (
+                " <b>📥 PROGRES UNDUHAN</b>\n"
                 "═══════════════════════\n"
-                "   <b>📥 PROGRES UNDUHAN</b>\n"
-                "═══════════════════════\n\n"
-                f"  📝 <b>Nama File :</b> <code>{filename}</code>\n"
-                f"  🔗 <b>URL       :</b> <code>{url}</code>\n"
-                f"  ⏱️ <b>Waktu     :</b> <code>{elapsed:.1f} detik</code>\n"
-                f"  🚀 <b>Kecepatan :</b> <code>{speed:.2f} MB/s</code>\n"
-                f"  📦 <b>Terunduh  :</b> <code>{size_mb:.2f} MB</code>\n\n"
+                f"📝<b>Nama File:</b> <code>{filename}</code>\n"
+                f"⏱️<b>Waktu:</b> <code>{elapsed:.1f} detik</code>\n"
+                f"🚀<b>Kecepatan:</b> <code>{speed:.2f} MB/s</code>\n"
+                f"📦<b>Terunduh:</b> <code>{size_mb:.2f} MB</code>\n"
                 "═══════════════════════"
             )
             try:
@@ -70,4 +67,4 @@ async def handle_m3u8(client, message: Message):
 m3u8_handler = MessageHandler(
     handle_m3u8,
     filters.text & ~filters.command("start")
-            )
+)
