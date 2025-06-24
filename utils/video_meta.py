@@ -1,48 +1,9 @@
-import subprocess
-import os
-import json
-
-def get_video_duration(path: str) -> int:
-    """Mengambil durasi video (dalam detik) menggunakan ffprobe."""
-    try:
-        result = subprocess.run(
-            [
-                "ffprobe", "-v", "error",
-                "-select_streams", "v:0",
-                "-show_entries", "format=duration",
-                "-of", "default=noprint_wrappers=1:nokey=1",
-                path
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        return int(float(result.stdout.strip()))
-    except Exception as e:
-        print(f"❌ Gagal mengambil durasi: {e}")
-        return 0
-
-def get_thumbnail(path: str, thumb_path: str) -> str:
-    """Menghasilkan thumbnail JPG dari detik ke-1 video."""
-    try:
-        subprocess.run(
-            [
-                "ffmpeg", "-y", "-i", path,
-                "-ss", "00:00:01.000", "-vframes", "1",
-                "-s", "480x270",
-                thumb_path
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-        return thumb_path if os.path.exists(thumb_path) else None
-    except Exception as e:
-        print(f"❌ Gagal mengambil thumbnail: {e}")
-        return None
-
 def get_video_info(path: str) -> dict:
-    """Mengambil metadata lengkap video seperti durasi, resolusi, codec, bitrate, frame rate, dll."""
+    """Mengambil metadata lengkap video."""
     try:
+        if not os.path.exists(path):
+            raise FileNotFoundError("File video tidak ditemukan")
+
         result = subprocess.run(
             [
                 "ffprobe", "-v", "error",
@@ -56,10 +17,18 @@ def get_video_info(path: str) -> dict:
             stderr=subprocess.PIPE,
             text=True
         )
+
+        if not result.stdout:
+            raise ValueError("Output ffprobe kosong")
+
         data = json.loads(result.stdout)
 
-        video_stream = next((s for s in data["streams"] if s["codec_type"] == "video"), {})
-        audio_stream = next((s for s in data["streams"] if s["codec_type"] == "audio"), {})
+        streams = data.get("streams", [])
+        if not streams:
+            raise ValueError("Tidak ada stream ditemukan dalam metadata")
+
+        video_stream = next((s for s in streams if s.get("codec_type") == "video"), {})
+        audio_stream = next((s for s in streams if s.get("codec_type") == "audio"), {})
         format_info = data.get("format", {})
 
         return {
