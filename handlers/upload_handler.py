@@ -1,5 +1,6 @@
 import os
 import math
+import time
 from tqdm import tqdm
 from pyrogram.types import Message
 from pyrogram import Client
@@ -12,15 +13,13 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
         file_size = os.path.getsize(output_path)
         file_size_mb = round(file_size / (1024 * 1024), 2)
         ext = os.path.splitext(output_path)[1]
-
-        # Gunakan durasi dari parameter
         video_duration = duration or 0
 
-        # Status awal
         status_msg = await message.reply_text("📤 Menyiapkan unggahan...")
 
-        # Progres CLI (tqdm)
         progress = tqdm(total=file_size, unit="B", unit_scale=True, desc="📤 Mengunggah")
+
+        last_update_time = 0  # ⏱️ Inisialisasi waktu update terakhir
 
         def generate_progress_bar(current, total, length=20):
             filled = int(length * current / total)
@@ -28,6 +27,14 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
             return f"<code>[{'█' * filled}{'░' * empty}]</code>"
 
         async def progress_callback(current, total):
+            nonlocal last_update_time
+            now = time.time()
+
+            # ⏱️ Perbarui status hanya jika sudah lewat 5 detik
+            if now - last_update_time < 10:
+                return
+            last_update_time = now
+
             current_mb = current / (1024 * 1024)
             bar = generate_progress_bar(current, total)
 
@@ -56,7 +63,6 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
             progress.n = current
             progress.refresh()
 
-        # Kirim video
         await client.send_video(
             chat_id=message.chat.id,
             video=output_path,
