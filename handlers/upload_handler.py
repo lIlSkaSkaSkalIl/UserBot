@@ -1,4 +1,5 @@
 import os
+from pyrogram.enums import ParseMode  # ✅ Tambahkan ini
 
 async def upload_video(client, message, output_path, filename, duration=None, thumb=None):
     try:
@@ -8,7 +9,7 @@ async def upload_video(client, message, output_path, filename, duration=None, th
             duration=duration or None,
             thumb=thumb or None,
             caption=f"✅ Selesai!\nNama file: `{filename}`",
-            parse_mode="Markdown"
+            parse_mode=ParseMode.MARKDOWN  # ✅ Gunakan enum resmi
         )
 
         # 🧹 Hapus thumbnail jika ada
@@ -16,4 +17,8 @@ async def upload_video(client, message, output_path, filename, duration=None, th
             os.remove(thumb)
 
     except Exception as e:
-        await message.reply_text(f"❌ Gagal mengunggah: `{e}`", quote=True)
+        await message.reply_text(
+            f"❌ Gagal mengunggah: `{e}`",
+            quote=True,
+            parse_mode=ParseMode.MARKDOWN  # ✅ Tambahkan agar konsisten
+        )
