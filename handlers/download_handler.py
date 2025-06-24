@@ -3,6 +3,7 @@ import time
 from pyrogram import filters
 from pyrogram.types import Message
 from pyrogram.handlers import MessageHandler
+from pyrogram.enums import ParseMode  # ✅ Import enum parse mode
 
 from utility.video_utils import download_m3u8
 from utils.video_meta import get_video_duration, get_thumbnail
@@ -13,43 +14,45 @@ async def handle_m3u8(client, message: Message):
     url = message.text.strip()
     print("[BOT] 🔗 Link M3U8 diterima:", url)
 
-    # 🔒 Batasi hanya 1 unduhan dalam satu waktu
+    # 🔒 Cek apakah ada unduhan aktif
     if global_download_lock.locked():
-        await message.reply_text("⏳ Maaf, sedang ada unduhan aktif. Mohon tunggu hingga selesai.")
+        await message.reply_text(
+            "⏳ Maaf, sedang ada unduhan aktif. Mohon tunggu hingga selesai.",
+            parse_mode=ParseMode.HTML  # ✅ HTML enum parse mode
+        )
         return
 
     async with global_download_lock:
-        # ✅ Tes teks statis menggunakan HTML parse_mode
+        # ✅ Tes parse_mode=HTML dengan teks statis
         await message.reply_text(
-            "<b>✅ Test HTML berhasil</b>\n<i>Ini teks miring</i>\n<code>Dan ini kode</code>",
-            parse_mode="html"
+            "<b>🔧 Tes ParseMode HTML berhasil!</b>\n<i>Ini teks miring</i>\n<code>Ini kode</code>",
+            parse_mode=ParseMode.HTML  # ✅ Gunakan enum, bukan string
         )
 
-        start_time = time.time()
         status_msg = await message.reply_text("🔍 Memulai proses unduhan...")
 
+        start_time = time.time()
         filename = f"{int(start_time)}.mp4"
         output_path = os.path.join("downloads", filename)
 
-        # 📥 Callback progres unduhan (setiap 10 detik)
+        # Callback progres unduhan
         async def progress_callback(size_mb):
             elapsed = time.time() - start_time
             speed = size_mb / elapsed if elapsed > 0 else 0
 
             text = (
-                "📥 Sedang mengunduh...\n\n"
-                f"📄 Nama file : {filename}\n"
-                f"🔗 URL       : {url}\n"
-                f"📦 Terunduh  : {size_mb:.2f} MB\n"
-                f"⏱️ Waktu     : {elapsed:.1f} detik\n"
-                f"🚀 Kecepatan : {speed:.2f} MB/s"
+                "<b>📥 Sedang mengunduh...</b>\n\n"
+                f"<b>Nama file:</b> <code>{filename}</code>\n"
+                f"<b>URL:</b> <code>{url}</code>\n"
+                f"<b>Terunduh:</b> <code>{size_mb:.2f} MB</code>\n"
+                f"<b>Waktu:</b> <code>{elapsed:.1f} detik</code>\n"
+                f"<b>Kecepatan:</b> <code>{speed:.2f} MB/s</code>"
             )
             try:
-                await status_msg.edit_text(text, parse_mode=None)
+                await status_msg.edit_text(text, parse_mode=ParseMode.HTML)
             except:
-                pass  # Abaikan error jika gagal update
+                pass  # Abaikan jika gagal update
 
-        # 🚀 Mulai unduh
         try:
             await download_m3u8(url, output_path, progress_callback)
             print("[BOT] ✅ Unduhan selesai:", output_path)
@@ -58,7 +61,6 @@ async def handle_m3u8(client, message: Message):
             await status_msg.edit_text(f"❌ Gagal mengunduh: `{e}`")
             return
 
-        # 📤 Mulai upload
         await message.reply_text("📤 Memulai proses upload...")
         print("[BOT] 📤 Siap upload:", output_path)
 
@@ -68,12 +70,11 @@ async def handle_m3u8(client, message: Message):
 
         await upload_video(client, message, output_path, filename, duration, thumb)
 
-        # 🧹 Bersihkan file
         if os.path.exists(output_path):
             os.remove(output_path)
 
-# ✅ Handler untuk bot
+# ✅ Pasang handler
 m3u8_handler = MessageHandler(
     handle_m3u8,
     filters.text & ~filters.command("start")
-)
+            )
