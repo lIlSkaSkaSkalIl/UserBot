@@ -31,12 +31,12 @@ async def handle_m3u8(client, message: Message):
             speed = size_mb / elapsed if elapsed > 0 else 0
 
             text = (
-                " <b>📥 PROGRES UNDUHAN</b>\n"
-                "═══════════════════════\n"
-                f"📝<b>Nama File:</b> <code>{filename}</code>\n"
-                f"⏱️<b>Waktu:</b> <code>{elapsed:.1f} detik</code>\n"
-                f"🚀<b>Kecepatan:</b> <code>{speed:.2f} MB/s</code>\n"
-                f"📦<b>Terunduh:</b> <code>{size_mb:.2f} MB</code>\n"
+                " <b>📥 Downloading</b>\n\n"
+                "═══════════════════════\n\n"
+                f"📝 <b>Nama File :</b> <code>{filename}</code>\n\n"
+                f"⏱️ <b>Waktu :</b> <code>{elapsed:.1f} detik</code>\n\n"
+                f"🚀 <b>Kecepatan :</b> <code>{speed:.2f} MB/s</code>\n\n"
+                f"📦 <b>Terunduh :</b> <code>{size_mb:.2f} MB</code>\n\n"
                 "═══════════════════════"
             )
             try:
