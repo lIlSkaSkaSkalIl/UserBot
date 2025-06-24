@@ -31,15 +31,15 @@ async def handle_m3u8(client, message: Message):
             speed = size_mb / elapsed if elapsed > 0 else 0
 
             text = (
-                "📥 Sedang mengunduh...\n\n"
-                f"📄 Nama file : {filename}\n"
-                f"🔗 URL       : {url}\n"
-                f"📦 Terunduh  : {size_mb:.2f} MB\n"
-                f"⏱️ Waktu     : {elapsed:.1f} detik\n"
-                f"🚀 Kecepatan : {speed:.2f} MB/s"
+                "<b>📥 Sedang mengunduh...</b>\n\n"
+                f"<b>📄 Nama file:</b> <code>{filename}</code>\n"
+                f"<b>🔗 URL:</b> <code>{url}</code>\n"
+                f"<b>⏱️ Waktu:</b> <code>{elapsed:.1f} detik</code>\n"
+                f"<b>🚀 Kecepatan:</b> <code>{speed:.2f} MB/s</code>\n"
+                f"<b>📦 Terunduh:</b> <code>{size_mb:.2f} MB</code>"
             )
             try:
-                await status_msg.edit_text(text, parse_mode=None)
+                await status_msg.edit_text(text, parse_mode="html")
             except:
                 pass  # Abaikan error jika gagal update
 
@@ -49,7 +49,7 @@ async def handle_m3u8(client, message: Message):
             print("[BOT] ✅ Unduhan selesai:", output_path)
             await status_msg.edit_text("✅ Unduhan selesai.")
         except Exception as e:
-            await status_msg.edit_text(f"❌ Gagal mengunduh: `{e}`")
+            await status_msg.edit_text(f"❌ Gagal mengunduh: <code>{e}</code>", parse_mode="html")
             return
 
         # 📤 Mulai upload
@@ -66,8 +66,8 @@ async def handle_m3u8(client, message: Message):
         if os.path.exists(output_path):
             os.remove(output_path)
 
-# ✅ Handler untuk bot
+# ✅ Handler Pyrogram
 m3u8_handler = MessageHandler(
     handle_m3u8,
     filters.text & ~filters.command("start")
-        )
+                               )
