@@ -5,8 +5,6 @@ from pyrogram.types import Message
 from pyrogram import Client
 from pyrogram.enums import ParseMode
 
-from utils.video_meta import get_video_info
-
 CHUNK_SIZE = 1024 * 1024  # 1MB
 
 async def upload_video(client: Client, message: Message, output_path, filename, duration=None, thumb=None):
@@ -15,16 +13,13 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
         file_size_mb = round(file_size / (1024 * 1024), 2)
         ext = os.path.splitext(output_path)[1]
 
-        # Coba ambil metadata, jika tidak ada, lanjutkan dengan nilai default
-        info = get_video_info(output_path)
-        width = info.get("width")
-        height = info.get("height")
-        video_duration = info.get("duration") or duration
+        # Gunakan durasi dari parameter
+        video_duration = duration or 0
 
-        # Kirim pesan status awal
+        # Status awal
         status_msg = await message.reply_text("📤 Menyiapkan unggahan...")
 
-        # Inisialisasi progress bar
+        # Progres CLI (tqdm)
         progress = tqdm(total=file_size, unit="B", unit_scale=True, desc="📤 Mengunggah")
 
         def generate_progress_bar(current, total, length=20):
@@ -46,12 +41,10 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
 
             if video_duration:
                 text += f"⏱️ <b>Durasi:</b> <code>{video_duration} detik</code>\n"
-            if width and height:
-                text += f"📏 <b>Resolusi:</b> <code>{width}x{height}</code>\n"
 
             text += (
-                f"{bar}\n"
                 f"📦 <b>{current_mb:.2f} MB / {file_size_mb} MB</b>\n"
+                f"{bar}\n"
                 "╰━━━━━━━━━━━━━━━━━━━━━╯"
             )
 
@@ -63,7 +56,7 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
             progress.n = current
             progress.refresh()
 
-        # Kirim file video
+        # Kirim video
         await client.send_video(
             chat_id=message.chat.id,
             video=output_path,
@@ -76,7 +69,6 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
 
         progress.close()
 
-        # Hapus thumbnail jika ada
         if thumb and os.path.exists(thumb):
             os.remove(thumb)
 
