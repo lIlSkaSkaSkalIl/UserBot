@@ -1,6 +1,5 @@
 import os
 import time
-from datetime import datetime
 from pyrogram import filters
 from pyrogram.enums import ParseMode
 from pyrogram.types import Message
@@ -25,20 +24,31 @@ async def handle_m3u8(client, message: Message):
 
         filename = f"{int(start_time)}.mp4"
         output_path = os.path.join("downloads", filename)
+        ext = os.path.splitext(output_path)[1]
+
+        last_update_time = 0
 
         async def progress_callback(size_mb):
-            elapsed = time.time() - start_time
+            nonlocal last_update_time
+            now = time.time()
+            if now - last_update_time < 10:
+                return
+            last_update_time = now
+
+            elapsed = now - start_time
             speed = size_mb / elapsed if elapsed > 0 else 0
 
             text = (
-                "<b>📥 Downloading 📥</b>\n\n"
-                "═══════════════════════\n\n"
-                f"📝 <b>Nama File :</b> <code>{filename}</code>\n\n"
-                f"⏱️ <b>Waktu :</b> <code>{elapsed:.1f} detik</code>\n\n"
-                f"🚀 <b>Kecepatan :</b> <code>{speed:.2f} MB/s</code>\n\n"
-                f"📦 <b>Terunduh :</b> <code>{size_mb:.2f} MB</code>\n\n"
-                "═══════════════════════"
+                "   <b>📥 Progres Download</b>\n\n"
+                "╭━━━━━━━━━━━━━━━━━━━━━╮\n"
+                f" 📝 <b>Nama:</b> <code>{filename}</code>\n"
+                f" 📂 <b>Ekstensi:</b> <code>{ext}</code>\n"
+                f" 📦 <b>Terunduh:</b> <code>{size_mb:.2f} MB</code>\n"
+                f" ⏱️ <b>Waktu:</b> <code>{elapsed:.1f} detik</code>\n"
+                f" 🚀 <b>Kecepatan:</b> <code>{speed:.2f} MB/s</code>\n"
+                "╰━━━━━━━━━━━━━━━━━━━━━╯"
             )
+
             try:
                 await status_msg.edit_text(text, parse_mode=ParseMode.HTML)
             except:
