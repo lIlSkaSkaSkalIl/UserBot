@@ -25,22 +25,25 @@ async def handle_m3u8(client, message: Message):
         filename = f"{int(start_time)}.mp4"
         output_path = os.path.join("downloads", filename)
 
-        # Callback progres unduhan
+        # 📥 Callback progres unduhan (setiap 10 detik)
         async def progress_callback(size_mb):
             elapsed = time.time() - start_time
             speed = size_mb / elapsed if elapsed > 0 else 0
 
             text = (
-                "📥 **Sedang mengunduh...**\n"
-                f"📦 Terunduh: `{size_mb:.2f} MB`\n"
-                f"⏱️ Waktu berjalan: `{elapsed:.1f} detik`\n"
-                f"🚀 Kecepatan: `{speed:.2f} MB/s`"
+                "📥 Sedang mengunduh...\n\n"
+                f"📄 Nama file : {filename}\n"
+                f"🔗 URL       : {url}\n"
+                f"📦 Terunduh  : {size_mb:.2f} MB\n"
+                f"⏱️ Waktu     : {elapsed:.1f} detik\n"
+                f"🚀 Kecepatan : {speed:.2f} MB/s"
             )
             try:
                 await status_msg.edit_text(text, parse_mode=None)
             except:
-                pass  # Lewati jika pesan gagal diedit
+                pass  # Abaikan error jika gagal update
 
+        # 🚀 Mulai unduh
         try:
             await download_m3u8(url, output_path, progress_callback)
             print("[BOT] ✅ Unduhan selesai:", output_path)
@@ -49,6 +52,7 @@ async def handle_m3u8(client, message: Message):
             await status_msg.edit_text(f"❌ Gagal mengunduh: `{e}`")
             return
 
+        # 📤 Mulai upload
         await message.reply_text("📤 Memulai proses upload...")
         print("[BOT] 📤 Siap upload:", output_path)
 
@@ -58,10 +62,11 @@ async def handle_m3u8(client, message: Message):
 
         await upload_video(client, message, output_path, filename, duration, thumb)
 
-        # 🧹 Hapus file video
+        # 🧹 Bersihkan file
         if os.path.exists(output_path):
             os.remove(output_path)
 
+# ✅ Handler untuk bot
 m3u8_handler = MessageHandler(
     handle_m3u8,
     filters.text & ~filters.command("start")
