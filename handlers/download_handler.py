@@ -32,7 +32,6 @@ async def handle_m3u8(client, message: Message):
             speed = size_mb / elapsed if elapsed > 0 else 0
 
             text = (
-                "<pre>\n"
                 "╔════════════════════════════════╗\n"
                 "  🚀 Progres Unduhan Aktif\n"
                 "╠════════════════════════════════╣\n\n"
@@ -42,7 +41,6 @@ async def handle_m3u8(client, message: Message):
                 f" ⏱️ Waktu Berlalu : {elapsed:.1f} detik\n"
                 f" 🚀 Kecepatan     : {speed:.2f} MB/s\n\n"
                 "╚════════════════════════════════╝\n"
-                "</pre>"
             )
             try:
                 await status_msg.edit_text(text, parse_mode=ParseMode.HTML)
