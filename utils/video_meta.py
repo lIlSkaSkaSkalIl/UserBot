@@ -1,8 +1,13 @@
 import subprocess
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_video_duration(path: str) -> int:
-    """Mengambil durasi video (dalam detik) menggunakan ffprobe."""
+    """
+    Mengambil durasi video (dalam detik) menggunakan ffprobe.
+    """
     try:
         result = subprocess.run(
             [
@@ -18,11 +23,13 @@ def get_video_duration(path: str) -> int:
         )
         return int(float(result.stdout.strip()))
     except Exception as e:
-        print(f"❌ Gagal mengambil durasi: {e}")
+        logger.error("Gagal mengambil durasi video: %s", e)
         return 0
 
-def get_thumbnail(path: str, thumb_path: str) -> str:
-    """Menghasilkan thumbnail JPG dari detik ke-1 video."""
+def get_thumbnail(path: str, thumb_path: str) -> str | None:
+    """
+    Menghasilkan thumbnail JPG dari detik ke-1 video menggunakan ffmpeg.
+    """
     try:
         subprocess.run(
             [
@@ -36,5 +43,5 @@ def get_thumbnail(path: str, thumb_path: str) -> str:
         )
         return thumb_path if os.path.exists(thumb_path) else None
     except Exception as e:
-        print(f"❌ Gagal mengambil thumbnail: {e}")
+        logger.error("Gagal mengambil thumbnail: %s", e)
         return None
