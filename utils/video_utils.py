@@ -22,12 +22,16 @@ async def download_m3u8(url, output_path, progress_callback=None):
             subprocess.run(["chmod", "+x", binary_path])
             logger.info("🔐 Permission +x diberikan ke N_m3u8DL-RE")
 
-        # Jalankan downloader
+        # Setup nama file dan path
+        save_dir = os.path.dirname(output_path)
+        base_name = os.path.splitext(os.path.basename(output_path))[0]
+        final_path = os.path.join(save_dir, f"{base_name}.mkv")  # Karena --format=mkv
+
         cmd = [
             binary_path,
-            "-M", "format=mkv",       # Output dalam .mkv
-            "--save-name", os.path.splitext(os.path.basename(output_path))[0],
-            "--save-dir", os.path.dirname(output_path),
+            "-M", "format=mkv",
+            "--save-name", base_name,
+            "--save-dir", save_dir,
             url
         ]
         logger.debug(f"📥 Menjalankan command: {' '.join(cmd)}")
@@ -50,9 +54,8 @@ async def download_m3u8(url, output_path, progress_callback=None):
             if line:
                 logger.debug(f"[M3U8DL] {line.strip()}")
 
-            # Periksa ukuran file untuk progres
-            if os.path.exists(output_path):
-                size_mb = round(os.path.getsize(output_path) / (1024 * 1024), 2)
+            if os.path.exists(final_path):
+                size_mb = round(os.path.getsize(final_path) / (1024 * 1024), 2)
 
                 if size_mb != last_reported_mb:
                     sys.stdout.write(f"\r📦 Terunduh: {size_mb:.2f} MB")
@@ -72,12 +75,17 @@ async def download_m3u8(url, output_path, progress_callback=None):
             logger.error(f"❌ N_m3u8DL-RE keluar dengan kode: {process.returncode}")
             raise Exception(f"N_m3u8DL-RE gagal (code {process.returncode})")
 
-        if not os.path.exists(output_path):
+        if not os.path.exists(final_path):
             raise FileNotFoundError("❌ File output tidak ditemukan setelah unduhan.")
 
-        final_size = os.path.getsize(output_path) / (1024 * 1024)
-        logger.info(f"✅ Unduhan selesai: {output_path} ({final_size:.2f} MB)")
+        final_size = os.path.getsize(final_path) / (1024 * 1024)
+        logger.info(f"✅ Unduhan selesai: {final_path} ({final_size:.2f} MB)")
         print()
+
+        # Rename agar sesuai dengan output_path (mp4)
+        if final_path != output_path:
+            os.rename(final_path, output_path)
+            logger.info(f"🔁 File diubah dari {final_path} ➜ {output_path}")
 
     except Exception as e:
         logger.exception(f"❌ Gagal mengunduh video dari {url}: {e}")
