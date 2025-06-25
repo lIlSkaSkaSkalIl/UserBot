@@ -11,10 +11,14 @@ from handlers.download_handler import m3u8_handler
 DOWNLOAD_DIR = "downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-# 📝 Konfigurasi logging
+# 📝 Konfigurasi logging ke console dan file
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),  # ke console (Colab / terminal)
+        logging.FileHandler("userbot.log", mode="a", encoding="utf-8")  # ke file
+    ]
 )
 logger = logging.getLogger(__name__)
 
