@@ -5,13 +5,13 @@ import sys
 import time
 import logging
 
-# Setup logger
 logger = logging.getLogger(__name__)
 
 async def download_m3u8(url, output_path, progress_callback=None):
     """
     Unduh video M3U8 menggunakan ffmpeg.
     Menampilkan progres di Colab (MB) dan Telegram (setiap 10 detik).
+    Juga mencatat semua output ffmpeg ke log.
     """
     logger.info(f"🚀 Memulai download M3U8 dari: {url}")
     print(f"[FFMPEG] 🚀 Memulai proses download dari:\n{url}\n")
@@ -32,6 +32,9 @@ async def download_m3u8(url, output_path, progress_callback=None):
             if line == '' and process.poll() is not None:
                 break
 
+            if line:
+                logger.debug(f"[ffmpeg] {line.strip()}")  # 🔹 Log semua output ffmpeg
+
             # Hitung progres dari ukuran file
             if os.path.exists(output_path):
                 size_mb = os.path.getsize(output_path) / (1024 * 1024)
@@ -42,14 +45,11 @@ async def download_m3u8(url, output_path, progress_callback=None):
                     sys.stdout.write(f"\r📦 Terunduh: {size_mb:.2f} MB")
                     sys.stdout.flush()
                     last_reported_mb = size_mb
-                    logger.debug(f"📦 Progres: {size_mb:.2f} MB")  # Log progres juga
+                    logger.debug(f"📦 Progres: {size_mb:.2f} MB")
 
                 # Kirim progres ke Telegram setiap 10 detik
                 now = time.time()
-                if (
-                    progress_callback
-                    and now - last_telegram_update >= 10
-                ):
+                if progress_callback and now - last_telegram_update >= 10:
                     await progress_callback(size_mb)
                     last_telegram_update = now
 
@@ -67,7 +67,7 @@ async def download_m3u8(url, output_path, progress_callback=None):
 
         final_size = os.path.getsize(output_path) / (1024 * 1024)
         logger.info(f"✅ Unduhan selesai: {output_path} ({final_size:.2f} MB)")
-        print()  # Tambah baris baru setelah progres
+        print()  # Baris baru untuk CLI
 
     except Exception as e:
         logger.exception(f"❌ Gagal mengunduh video dari {url}: {e}")
