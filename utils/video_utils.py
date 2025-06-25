@@ -6,12 +6,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-async def download_m3u8(url: str, output_path: str, status_callback=None) -> None:
+async def download_m3u8(url: str, output_path: str, progress_callback=None, status_callback=None):
     """
-    Unduh video dari link M3U8 menggunakan ffmpeg.
-    Jika ukuran file tidak bertambah > 20 detik, hentikan update dan tunggu ffmpeg selesai.
+    Mengunduh video M3U8 menggunakan ffmpeg, dengan opsi untuk update progres dan status.
     """
     logger.info("Memulai download dari: %s", url)
+    if status_callback:
+        await status_callback("📥 Memulai download dari FFmpeg...")
 
     try:
         process = subprocess.Popen(
@@ -21,52 +22,43 @@ async def download_m3u8(url: str, output_path: str, status_callback=None) -> Non
             universal_newlines=True
         )
 
-        last_size = -1.0
-        last_size_change_time = time.time()
-        status_sent = False
-        progress_done = False
+        last_size = -1
+        last_update_time = time.time()
+        stalled_time = 0
 
         while True:
-            line = process.stdout.readline()
-            if line == '' and process.poll() is not None:
+            if os.path.exists(output_path):
+                size = os.path.getsize(output_path)
+                size_mb = round(size / (1024 * 1024), 2)
+
+                if size != last_size:
+                    stalled_time = 0
+                    last_size = size
+                    if progress_callback:
+                        await progress_callback(size_mb)
+                else:
+                    stalled_time += 0.5
+                    if stalled_time > 20 and status_callback:
+                        await status_callback("⚠️ FFmpeg lambat atau macet, menunggu proses...")
+
+                await asyncio.sleep(0.5)
+
+            if process.poll() is not None:
                 break
 
-            if os.path.exists(output_path):
-                size_mb = round(os.path.getsize(output_path) / (1024 * 1024), 2)
-                now = time.time()
-
-                if size_mb != last_size:
-                    last_size = size_mb
-                    last_size_change_time = now
-                    progress_done = False
-
-                elif not progress_done and now - last_size_change_time >= 20:
-                    # Anggap download selesai, stop progress
-                    msg = f"📦 Ukuran tidak berubah selama 20 detik. Download dihentikan sementara di {size_mb:.2f} MB..."
-                    logger.info(msg)
-                    if status_callback:
-                        await status_callback(msg)
-                    progress_done = True
-
-            await asyncio.sleep(0.5)
-
-        process.wait()
+        if status_callback:
+            await status_callback("✅ FFmpeg selesai. Menyelesaikan proses...")
 
         if process.returncode != 0:
-            error_msg = f"❌ ffmpeg gagal dengan kode keluar {process.returncode}"
-            logger.error(error_msg)
-            if status_callback:
-                await status_callback(error_msg)
-            raise Exception(error_msg)
+            raise Exception(f"ffmpeg gagal dengan kode keluar {process.returncode}")
 
         if not os.path.exists(output_path):
-            raise FileNotFoundError("❌ File tidak ditemukan setelah unduhan.")
+            raise FileNotFoundError("File hasil unduhan tidak ditemukan.")
 
         final_size = os.path.getsize(output_path) / (1024 * 1024)
-        success_msg = f"✅ Download berhasil: {final_size:.2f} MB"
-        logger.info(success_msg)
+        logger.info("Download selesai: %.2f MB", final_size)
         if status_callback:
-            await status_callback(success_msg)
+            await status_callback(f"✅ Validasi selesai. Ukuran akhir: {final_size:.2f} MB")
 
     except Exception as e:
         logger.error("Gagal mengunduh video: %s", e)
