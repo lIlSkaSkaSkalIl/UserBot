@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 async def handle_m3u8(client, message: Message) -> None:
     url = message.text.strip()
     logger.info("🔗 Link M3U8 diterima dari user %s: %s", message.from_user.id, url)
-    print(f"🔗 Link diterima: {url}")
 
     if global_download_lock.locked():
         await message.reply_text("⏳ Maaf, sedang ada unduhan aktif. Mohon tunggu hingga selesai.")
@@ -64,7 +63,12 @@ async def handle_m3u8(client, message: Message) -> None:
                 logger.warning("Gagal update status: %s", e)
 
         try:
-            await download_m3u8(url, output_path, progress_callback, status_callback)
+            await download_m3u8(
+                url,
+                output_path,
+                progress_callback=progress_callback,
+                status_callback=status_callback
+            )
             logger.info("✅ Unduhan selesai: %s", output_path)
         except Exception as e:
             logger.error("❌ Gagal mengunduh: %s", e)
