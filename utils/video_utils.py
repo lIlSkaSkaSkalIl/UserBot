@@ -47,7 +47,11 @@ async def download_m3u8(url: str, output_path: str, progress_callback=None) -> N
             await asyncio.sleep(0.5)
 
         process.wait()
-        print()
+        print("🎉 Download dari ffmpeg selesai.")
+        logger.info("🎉 ffmpeg selesai mengunduh.")
+
+        print("🔎 Memvalidasi file hasil download...")
+        logger.info("🔎 Memvalidasi file hasil download...")
 
         if process.returncode != 0:
             raise Exception(f"ffmpeg gagal (exit code {process.returncode})")
@@ -57,6 +61,8 @@ async def download_m3u8(url: str, output_path: str, progress_callback=None) -> N
 
         final_size = os.path.getsize(output_path) / (1024 * 1024)
         logger.info("Download selesai: %.2f MB", final_size)
+        logger.info("✅ Validasi berhasil. File siap diproses.")
+        print("✅ Validasi berhasil. File siap diproses.")
 
     except Exception as e:
         logger.error("Gagal mengunduh video: %s", e)
