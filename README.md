@@ -22,13 +22,13 @@ M3U8 Downloader Telegram UserBot adalah bot otomatis berbasis [Pyrogram v2.0.106
 
 Klik tombol berikut untuk menjalankan langsung di Google Colab:
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lIlSkaSkaSkalIl/UserBot/blob/main/m3u8doenloaderUserBotWstatus-stable/M3U8%20Telegram%20userbot.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lIlSkaSkaSkalIl/UserBot/blob/main/M3U8%20Telegram%20userbot.ipynb)
 
 ---
 
 ## 🛠️ Cara Menggunakan (Colab)
 
-1. Buka notebook [M3U8 Telegram userbot.ipynb](https://github.com/lIlSkaSkaSkalIl/UserBot/blob/main/m3u8doenloaderUserBotWstatus-stable/M3U8%20Telegram%20userbot.ipynb)
+1. Buka notebook [M3U8 Telegram userbot.ipynb](https://colab.research.google.com/github/lIlSkaSkaSkalIl/UserBot/blob/main/M3U8%20Telegram%20userbot.ipynb)
 2. Jalankan sel satu per satu
 3. Masukkan `PYROGRAM_SESSION_STRING` saat diminta
 4. Kirimkan perintah melalui Telegram ke akun userbot Anda:
