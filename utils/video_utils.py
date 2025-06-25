@@ -8,9 +8,10 @@ logger = logging.getLogger(__name__)
 
 async def download_m3u8(url: str, output_path: str, progress_callback=None, status_callback=None):
     """
-    Mengunduh video M3U8 menggunakan ffmpeg, dengan opsi untuk update progres dan status.
+    Mengunduh video M3U8 menggunakan ffmpeg, dengan progres opsional.
     """
     logger.info("Memulai download dari: %s", url)
+    
     if status_callback:
         await status_callback("📥 Memulai download dari FFmpeg...")
 
@@ -23,23 +24,18 @@ async def download_m3u8(url: str, output_path: str, progress_callback=None, stat
         )
 
         last_size = -1
-        last_update_time = time.time()
-        stalled_time = 0
+        last_update_time = 0
 
         while True:
             if os.path.exists(output_path):
                 size = os.path.getsize(output_path)
                 size_mb = round(size / (1024 * 1024), 2)
 
-                if size != last_size:
-                    stalled_time = 0
+                now = time.time()
+                if size != last_size and progress_callback and now - last_update_time >= 10:
                     last_size = size
-                    if progress_callback:
-                        await progress_callback(size_mb)
-                else:
-                    stalled_time += 0.5
-                    if stalled_time > 20 and status_callback:
-                        await status_callback("⚠️ FFmpeg lambat atau macet, menunggu proses...")
+                    last_update_time = now
+                    await progress_callback(size_mb)
 
                 await asyncio.sleep(0.5)
 
@@ -57,6 +53,7 @@ async def download_m3u8(url: str, output_path: str, progress_callback=None, stat
 
         final_size = os.path.getsize(output_path) / (1024 * 1024)
         logger.info("Download selesai: %.2f MB", final_size)
+
         if status_callback:
             await status_callback(f"✅ Validasi selesai. Ukuran akhir: {final_size:.2f} MB")
 
