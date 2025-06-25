@@ -1,19 +1,20 @@
 import subprocess
 import os
 import asyncio
+import sys
 import time
 import logging
 
+# Setup logger
 logger = logging.getLogger(__name__)
 
-async def download_m3u8(url: str, output_path: str, progress_callback=None, status_callback=None):
+async def download_m3u8(url, output_path, progress_callback=None):
     """
-    Mengunduh video M3U8 menggunakan ffmpeg, dengan update progres setiap 10 detik.
+    Unduh video M3U8 menggunakan ffmpeg.
+    Menampilkan progres di Colab (MB) dan Telegram (setiap 10 detik).
     """
-    logger.info("Memulai download dari: %s", url)
-    
-    if status_callback:
-        await status_callback("📥 Memulai download dari FFmpeg...")
+    logger.info(f"🚀 Memulai download M3U8 dari: {url}")
+    print(f"[FFMPEG] 🚀 Memulai proses download dari:\n{url}\n")
 
     try:
         process = subprocess.Popen(
@@ -23,42 +24,51 @@ async def download_m3u8(url: str, output_path: str, progress_callback=None, stat
             universal_newlines=True
         )
 
-        last_update_time = 0
+        last_reported_mb = -1.0
+        last_telegram_update = 0
 
         while True:
-            now = time.time()
+            line = process.stdout.readline()
+            if line == '' and process.poll() is not None:
+                break
 
+            # Hitung progres dari ukuran file
             if os.path.exists(output_path):
-                size = os.path.getsize(output_path)
-                size_mb = round(size / (1024 * 1024), 2)
+                size_mb = os.path.getsize(output_path) / (1024 * 1024)
+                size_mb = round(size_mb, 2)
 
-                # Kirim progres setiap 10 detik meskipun ukuran tidak berubah
-                if progress_callback and now - last_update_time >= 10:
-                    last_update_time = now
+                # Tampilkan progres ke Colab
+                if size_mb != last_reported_mb:
+                    sys.stdout.write(f"\r📦 Terunduh: {size_mb:.2f} MB")
+                    sys.stdout.flush()
+                    last_reported_mb = size_mb
+                    logger.debug(f"📦 Progres: {size_mb:.2f} MB")  # Log progres juga
+
+                # Kirim progres ke Telegram setiap 10 detik
+                now = time.time()
+                if (
+                    progress_callback
+                    and now - last_telegram_update >= 10
+                ):
                     await progress_callback(size_mb)
+                    last_telegram_update = now
 
             await asyncio.sleep(0.5)
 
-            if process.poll() is not None:
-                break
-
-        if status_callback:
-            await status_callback("✅ FFmpeg selesai. Menyelesaikan proses...")
+        process.wait()
 
         if process.returncode != 0:
+            logger.error(f"❌ ffmpeg keluar dengan kode: {process.returncode}")
             raise Exception(f"ffmpeg gagal dengan kode keluar {process.returncode}")
 
         if not os.path.exists(output_path):
-            raise FileNotFoundError("File hasil unduhan tidak ditemukan.")
+            logger.error("❌ File output tidak ditemukan setelah proses selesai.")
+            raise FileNotFoundError("File tidak ditemukan setelah unduhan.")
 
         final_size = os.path.getsize(output_path) / (1024 * 1024)
-        logger.info("Download selesai: %.2f MB", final_size)
-
-        if status_callback:
-            await status_callback(f"✅ Validasi selesai. Ukuran akhir: {final_size:.2f} MB")
+        logger.info(f"✅ Unduhan selesai: {output_path} ({final_size:.2f} MB)")
+        print()  # Tambah baris baru setelah progres
 
     except Exception as e:
-        logger.error("Gagal mengunduh video: %s", e)
-        if status_callback:
-            await status_callback(f"❌ Gagal mengunduh: {e}")
-        raise
+        logger.exception(f"❌ Gagal mengunduh video dari {url}: {e}")
+        raise Exception(f"Gagal mengunduh video: {e}")
