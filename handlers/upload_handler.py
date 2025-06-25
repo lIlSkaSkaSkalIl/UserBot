@@ -1,12 +1,10 @@
 import os
+import math
 import time
-import logging
+from tqdm import tqdm
 from pyrogram.types import Message
 from pyrogram import Client
 from pyrogram.enums import ParseMode
-
-# Setup logger
-logger = logging.getLogger(__name__)
 
 CHUNK_SIZE = 1024 * 1024  # 1MB
 
@@ -17,8 +15,9 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
         ext = os.path.splitext(output_path)[1]
         video_duration = duration or 0
 
-        logger.info(f"📤 Mulai upload: {filename} ({file_size_mb} MB, durasi={video_duration})")
         status_msg = await message.reply_text("📤 Menyiapkan unggahan...")
+
+        progress = tqdm(total=file_size, unit="B", unit_scale=True, desc="📤 Mengunggah")
 
         last_update_time = 0
         start_time = time.time()
@@ -47,8 +46,6 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
 
             bar = generate_progress_bar(current, total)
 
-            logger.info(f"⬆️ Upload progress: {current_mb:.2f}/{file_size_mb} MB ({speed:.2f} MB/s, ETA {format_eta(eta)})")
-
             text = (
                 "   <b>📤 Progres Upload</b>\n\n"
                 "╭━━━━━━━━━━━━━━━━━━━━━╮\n"
@@ -75,8 +72,11 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
 
             try:
                 await status_msg.edit_text(text, parse_mode=ParseMode.HTML)
-            except Exception as e:
-                logger.debug(f"Gagal update status: {e}")
+            except:
+                pass
+
+            progress.n = current
+            progress.refresh()
 
         await client.send_video(
             chat_id=message.chat.id,
@@ -88,17 +88,17 @@ async def upload_video(client: Client, message: Message, output_path, filename, 
             progress=progress_callback
         )
 
+        progress.close()
+
+        # Hapus status progres
         try:
             await status_msg.delete()
         except:
             pass
 
-        logger.info(f"✅ Upload selesai: {filename}")
-
         if thumb and os.path.exists(thumb):
             os.remove(thumb)
-            logger.info(f"🧹 Thumbnail dihapus: {thumb}")
 
     except Exception as e:
-        logger.exception(f"❌ Gagal mengunggah {filename}: {e}")
+        progress.close()
         await message.reply_text(f"❌ Gagal mengunggah: <code>{e}</code>", parse_mode=ParseMode.HTML)

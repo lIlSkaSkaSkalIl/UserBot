@@ -1,26 +1,20 @@
 import os
 import time
-import logging
 from pyrogram import filters
 from pyrogram.enums import ParseMode
 from pyrogram.types import Message
 from pyrogram.handlers import MessageHandler
 
-from utils.video_utils import download_m3u8
+from utility.video_utils import download_m3u8
 from utils.video_meta import get_video_duration, get_thumbnail
 from handlers.upload_handler import upload_video
 from utils.download_lock import global_download_lock
 
-# 🔧 Setup logger
-logger = logging.getLogger(__name__)
-
 async def handle_m3u8(client, message: Message):
     url = message.text.strip()
-    user = message.from_user
-    logger.info(f"🔗 Link M3U8 diterima dari {user.first_name} (id={user.id}): {url}")
+    print("[BOT] 🔗 Link M3U8 diterima:", url)
 
     if global_download_lock.locked():
-        logger.warning("🔒 Unduhan ditolak karena ada proses aktif.")
         await message.reply_text("⏳ Maaf, sedang ada unduhan aktif. Mohon tunggu hingga selesai.")
         return
 
@@ -31,6 +25,7 @@ async def handle_m3u8(client, message: Message):
         filename = f"{int(start_time)}.mp4"
         output_path = os.path.join("downloads", filename)
         ext = os.path.splitext(output_path)[1]
+
         last_update_time = 0
 
         async def progress_callback(size_mb):
@@ -56,21 +51,19 @@ async def handle_m3u8(client, message: Message):
 
             try:
                 await status_msg.edit_text(text, parse_mode=ParseMode.HTML)
-            except Exception as e:
-                logger.debug(f"❗ Gagal update status pesan: {e}")
+            except:
+                pass
 
         try:
-            logger.info(f"⬇️ Memulai unduhan: {url}")
             await download_m3u8(url, output_path, progress_callback)
-            logger.info(f"✅ Unduhan selesai: {output_path}")
+            print("[BOT] ✅ Unduhan selesai:", output_path)
             await status_msg.edit_text("✅ Unduhan selesai.")
         except Exception as e:
-            logger.error(f"❌ Gagal mengunduh {url}: {e}")
             await status_msg.edit_text(f"❌ Gagal mengunduh: <code>{e}</code>", parse_mode=ParseMode.HTML)
             return
 
         await message.reply_text("📤 Memulai proses upload...")
-        logger.info(f"📤 Upload dimulai: {output_path}")
+        print("[BOT] 📤 Siap upload:", output_path)
 
         duration = get_video_duration(output_path)
         thumb_path = os.path.splitext(output_path)[0] + "_thumb.jpg"
@@ -80,7 +73,6 @@ async def handle_m3u8(client, message: Message):
 
         if os.path.exists(output_path):
             os.remove(output_path)
-            logger.info(f"🧹 File sementara dihapus: {output_path}")
 
 m3u8_handler = MessageHandler(
     handle_m3u8,
