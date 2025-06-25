@@ -90,6 +90,9 @@ async def upload_video(
             progress=progress_callback
         )
 
+        logger.info("✅ Upload selesai: %s (%s)", filename, output_path)
+        print(f"\n✅ Upload berhasil: {filename} ({file_size_mb:.2f} MB)")
+
         progress.close()
         try:
             await status_msg.delete()
