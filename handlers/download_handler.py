@@ -72,9 +72,14 @@ async def handle_m3u8(client, message: Message) -> None:
         await message.reply_text("📤 Memulai proses upload...")
         logger.info("📤 Mengunggah: %s", output_path)
 
+        logger.info("🎬 Mengambil metadata video...")
         duration = get_video_duration(output_path)
+        
+        logger.info("🖼️ Menghasilkan thumbnail...")
         thumb_path = os.path.splitext(output_path)[0] + "_thumb.jpg"
         thumb = get_thumbnail(output_path, thumb_path)
+
+        logger.info("📤 Mengunggah video ke Telegram...")
 
         await upload_video(client, message, output_path, filename, duration, thumb)
 
