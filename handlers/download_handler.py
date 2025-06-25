@@ -6,18 +6,21 @@ from pyrogram.enums import ParseMode
 from pyrogram.types import Message
 from pyrogram.handlers import MessageHandler
 
-from utils.video_utils import download_m3u8
+from utility.video_utils import download_m3u8
 from utils.video_meta import get_video_duration, get_thumbnail
 from handlers.upload_handler import upload_video
 from utils.download_lock import global_download_lock
 
+# 🔧 Setup logger
 logger = logging.getLogger(__name__)
 
-async def handle_m3u8(client, message: Message) -> None:
+async def handle_m3u8(client, message: Message):
     url = message.text.strip()
-    logger.info("🔗 Link M3U8 diterima dari user %s: %s", message.from_user.id, url)
+    user = message.from_user
+    logger.info(f"🔗 Link M3U8 diterima dari {user.first_name} (id={user.id}): {url}")
 
     if global_download_lock.locked():
+        logger.warning("🔒 Unduhan ditolak karena ada proses aktif.")
         await message.reply_text("⏳ Maaf, sedang ada unduhan aktif. Mohon tunggu hingga selesai.")
         return
 
@@ -30,7 +33,7 @@ async def handle_m3u8(client, message: Message) -> None:
         ext = os.path.splitext(output_path)[1]
         last_update_time = 0
 
-        async def progress_callback(size_mb: float) -> None:
+        async def progress_callback(size_mb):
             nonlocal last_update_time
             now = time.time()
             if now - last_update_time < 10:
@@ -54,28 +57,20 @@ async def handle_m3u8(client, message: Message) -> None:
             try:
                 await status_msg.edit_text(text, parse_mode=ParseMode.HTML)
             except Exception as e:
-                logger.warning("Gagal update progres: %s", e)
-
-        async def status_callback(msg: str) -> None:
-            try:
-                await status_msg.edit_text(msg, parse_mode=ParseMode.HTML)
-            except Exception as e:
-                logger.warning("Gagal update status: %s", e)
+                logger.debug(f"❗ Gagal update status pesan: {e}")
 
         try:
-            await download_m3u8(
-                url,
-                output_path,
-                progress_callback=progress_callback,
-                status_callback=status_callback
-            )
-            logger.info("✅ Unduhan selesai: %s", output_path)
+            logger.info(f"⬇️ Memulai unduhan: {url}")
+            await download_m3u8(url, output_path, progress_callback)
+            logger.info(f"✅ Unduhan selesai: {output_path}")
+            await status_msg.edit_text("✅ Unduhan selesai.")
         except Exception as e:
-            logger.error("❌ Gagal mengunduh: %s", e)
+            logger.error(f"❌ Gagal mengunduh {url}: {e}")
+            await status_msg.edit_text(f"❌ Gagal mengunduh: <code>{e}</code>", parse_mode=ParseMode.HTML)
             return
 
-        logger.info("📤 Mengunggah: %s", output_path)
-        await message.reply_text("📤 Mengunggah video...")
+        await message.reply_text("📤 Memulai proses upload...")
+        logger.info(f"📤 Upload dimulai: {output_path}")
 
         duration = get_video_duration(output_path)
         thumb_path = os.path.splitext(output_path)[0] + "_thumb.jpg"
@@ -85,5 +80,9 @@ async def handle_m3u8(client, message: Message) -> None:
 
         if os.path.exists(output_path):
             os.remove(output_path)
+            logger.info(f"🧹 File sementara dihapus: {output_path}")
 
-m3u8_handler = MessageHandler(handle_m3u8, filters.text & ~filters.command("start"))
+m3u8_handler = MessageHandler(
+    handle_m3u8,
+    filters.text & ~filters.command("start")
+)
