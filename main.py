@@ -5,7 +5,7 @@ from pyrogram import Client
 from config import API_ID, API_HASH, SESSION_STRING
 from handlers.command_handler import start_handler
 from handlers.download_handler import m3u8_handler
-from handlers.upload_handler import upload_handler
+# from handlers.upload_handler import upload_handler
 
 # 📂 Konstanta
 DOWNLOAD_DIR = "downloads"
@@ -24,7 +24,7 @@ app = Client("m3u8_userbot", api_id=API_ID, api_hash=API_HASH, session_string=SE
 # 📌 Daftarkan semua handler
 app.add_handler(start_handler)
 app.add_handler(m3u8_handler)
-app.add_handler(upload_handler)
+# app.add_handler(upload_handler)
 
 # 🔁 Jalankan UserBot
 if __name__ == "__main__":
