@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 async def download_m3u8(url: str, output_path: str, progress_callback=None, status_callback=None):
     """
-    Mengunduh video M3U8 menggunakan ffmpeg, dengan progres opsional.
+    Mengunduh video M3U8 menggunakan ffmpeg, dengan update progres setiap 10 detik.
     """
     logger.info("Memulai download dari: %s", url)
     
@@ -23,21 +23,21 @@ async def download_m3u8(url: str, output_path: str, progress_callback=None, stat
             universal_newlines=True
         )
 
-        last_size = -1
         last_update_time = 0
 
         while True:
+            now = time.time()
+
             if os.path.exists(output_path):
                 size = os.path.getsize(output_path)
                 size_mb = round(size / (1024 * 1024), 2)
 
-                now = time.time()
-                if size != last_size and progress_callback and now - last_update_time >= 10:
-                    last_size = size
+                # Kirim progres setiap 10 detik meskipun ukuran tidak berubah
+                if progress_callback and now - last_update_time >= 10:
                     last_update_time = now
                     await progress_callback(size_mb)
 
-                await asyncio.sleep(0.5)
+            await asyncio.sleep(0.5)
 
             if process.poll() is not None:
                 break
