@@ -19,6 +19,7 @@ async def handle_m3u8(client, message: Message) -> None:
     """
     url = message.text.strip()
     logger.info("🔗 Link M3U8 diterima dari user %s: %s", message.from_user.id, url)
+    print(f"🔗 Link diterima: {url}")
 
     if global_download_lock.locked():
         await message.reply_text("⏳ Maaf, sedang ada unduhan aktif. Mohon tunggu hingga selesai.")
@@ -63,23 +64,41 @@ async def handle_m3u8(client, message: Message) -> None:
         try:
             await download_m3u8(url, output_path, progress_callback)
             logger.info("✅ Unduhan selesai: %s", output_path)
+            print("✅ Unduhan selesai, memulai validasi file...")
             await status_msg.edit_text("✅ Unduhan selesai.")
         except Exception as e:
             logger.error("❌ Gagal mengunduh: %s", e)
             await status_msg.edit_text(f"❌ Gagal mengunduh: <code>{e}</code>", parse_mode=ParseMode.HTML)
             return
 
+        # Validasi file
+        print("🔎 Memvalidasi file hasil unduhan...")
+        logger.info("🔎 Memvalidasi file hasil unduhan...")
+
+        if not os.path.exists(output_path):
+            await message.reply_text("❌ File tidak ditemukan setelah unduhan.")
+            logger.error("❌ File tidak ditemukan setelah unduhan.")
+            return
+
+        logger.info("✅ Validasi selesai. File ditemukan.")
+        print("✅ Validasi selesai. File ditemukan.")
+
+        # Upload
         await message.reply_text("📤 Memulai proses upload...")
         logger.info("📤 Mengunggah: %s", output_path)
+        print("📤 Upload ke Telegram dimulai...")
 
         logger.info("🎬 Mengambil metadata video...")
+        print("🎬 Mengambil metadata video...")
         duration = get_video_duration(output_path)
         
         logger.info("🖼️ Menghasilkan thumbnail...")
+        print("🖼️ Membuat thumbnail...")
         thumb_path = os.path.splitext(output_path)[0] + "_thumb.jpg"
         thumb = get_thumbnail(output_path, thumb_path)
 
         logger.info("📤 Mengunggah video ke Telegram...")
+        print("📤 Mengunggah video ke Telegram...")
 
         await upload_video(client, message, output_path, filename, duration, thumb)
 
