@@ -1,14 +1,21 @@
+import logging
 from pyrogram import filters
 from pyrogram.types import Message
 from pyrogram.handlers import MessageHandler
 
-# 🔰 Fungsi yang menangani perintah /start
-async def start(_, message: Message):
+logger = logging.getLogger(__name__)
+
+async def start_handler_func(_, message: Message) -> None:
+    """
+    Handler untuk perintah /start.
+    Menjawab dengan instruksi dasar kepada pengguna.
+    """
+    logger.info("Menerima perintah /start dari %s", message.from_user.id)
     await message.reply_text(
         "👋 Halo!\n"
         "Kirimkan link m3u8 ke sini dan saya akan mengunduh videonya untukmu.\n\n"
         "📥 Contoh: https://example.com/video.m3u8"
     )
 
-# 📌 Handler yang siap ditambahkan ke Pyrogram app
-start_handler = MessageHandler(start, filters.command("start"))
+# Handler yang didaftarkan ke Pyrogram client
+start_handler = MessageHandler(start_handler_func, filters.command("start"))
