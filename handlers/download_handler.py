@@ -6,7 +6,7 @@ from pyrogram.enums import ParseMode
 from pyrogram.types import Message
 from pyrogram.handlers import MessageHandler
 
-from utility.video_utils import download_m3u8
+from utils.video_utils import download_m3u8
 from utils.video_meta import get_video_duration, get_thumbnail
 from handlers.upload_handler import upload_video
 from utils.download_lock import global_download_lock
